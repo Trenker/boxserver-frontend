@@ -1,0 +1,14 @@
+{
+  "name": "boxserver-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for the box server",
+  "authors": [
+    "Georg Großberger <kontakt@grossberger-ge.org>"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/trenker/boxserver-frontend",
+  "private": true,
+  "dependencies": {
+    "bootstrap": "~3.3.1"
+  }
+}

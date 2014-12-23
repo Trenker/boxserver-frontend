@@ -1,0 +1,16 @@
+{
+  "name": "boxserver-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for the boxserver",
+  "private": true,
+  "author": "Georg Großberger <kontakt@grossberger-ge.org> (http://grossberger-ge.org/)",
+  "license": "MIT",
+  "dependencies": {
+    "browser-sync": "^1.8.1",
+    "del": "^1.1.0",
+    "gulp": "^3.8.10",
+    "gulp-less": "^2.0.1",
+    "gulp-uncss": "^0.5.1",
+    "merge-stream": "^0.1.6"
+  }
+}
