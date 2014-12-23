@@ -11,6 +11,7 @@
     "gulp": "^3.8.10",
     "gulp-less": "^2.0.1",
     "gulp-uncss": "^0.5.1",
-    "merge-stream": "^0.1.6"
+    "merge-stream": "^0.1.6",
+    "run-sequence": "^1.0.2"
   }
 }

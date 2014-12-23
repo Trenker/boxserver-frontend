@@ -13,20 +13,28 @@ var inline      = require('gulp-inline-source');
 var replace     = require('gulp-replace');
 var merge       = require("merge-stream");
 var del         = require("del");
+var runSequence = require('run-sequence');
+
+var prefixOptions = {
+	browsers: ['last 2 versions'],
+	cascade: false
+};
+var buildDir = "./build";
+var baseUrl  = process.env.BASEURL || "http://localhost:8001/";
 
 gulp.task("css", function() {
 	return gulp.src("./src/main.less")
 		.pipe(less())
-		.pipe(prefix())
+		.pipe(prefix(prefixOptions))
 		.pipe(uncss({html: "./src/styleguide.html"}))
 		.pipe(compress())
-		.pipe(gulp.dest("./build"))
+		.pipe(gulp.dest(buildDir))
 });
 
 gulp.task("js", function() {
 	return gulp.src("./src/scripts.js")
 		.pipe(uglify())
-		.pipe(gulp.dest("./build"))
+		.pipe(gulp.dest(buildDir))
 });
 
 gulp.task("html", ["css", "js"], function() {
@@ -38,50 +46,49 @@ gulp.task("html", ["css", "js"], function() {
 			quotes: true,
 			empty: true
 		}))
-		.pipe(replace(/boxserver_url/i, process.env.BASEURL || "http://localhost:8001/"))
-		.pipe(gulp.dest("./build"))
+		.pipe(replace(/boxserver_url/i, baseUrl))
+		.pipe(gulp.dest(buildDir))
 });
 
 gulp.task("browser-sync", ["html"], function() {
 	browserSync({
 		open: false,
 		server: {
-			baseDir: "./build"
+			baseDir: buildDir
 		}
 	})
 });
 
-gulp.task("clean", function(cb) {
-	del("./src/build/**/*.*", {force: true}, cb);
+gulp.task("purge", function(cb) {
+	del(buildDir + "/**/*.*", {force: true}, cb);
 });
 
-gulp.task("full", ["clean"], function() {
-	return gulp.start("html");
+gulp.task("clean", function(cb) {
+	del([buildDir + "/**/*.js", buildDir + "/**/*.css"], {force: true}, cb);
+});
+
+gulp.task("release", function(cb) {
+	runSequence("purge", "html", "clean", cb)
 });
 
 gulp.task("default", ["html"]);
 
-gulp.task("watch", ["browser-sync"], function() {
-	gulp.watch("./src/**/*.*", ["html", browserSync.reload])
-});
-
-gulp.task("src", function() {
+gulp.task("dev", function() {
 	var js = gulp.src("./src/scripts.js")
-		.pipe(replace(/boxserver_url/i, process.env.BASEURL || "http://localhost:8001/"))
-		.pipe(gulp.dest("./build"));
+		.pipe(replace(/boxserver_url/i, baseUrl))
+		.pipe(gulp.dest(buildDir));
 
 	var css = gulp.src("./src/main.less")
 		.pipe(less())
-		.pipe(prefix())
-		.pipe(gulp.dest("./build"));
+		.pipe(prefix(prefixOptions))
+		.pipe(gulp.dest(buildDir));
 
 	var html = gulp.src("./src/styleguide.html")
-		.pipe(gulp.dest("./build"));
+		.pipe(gulp.dest(buildDir));
 
 	return merge(js, css, html);
 });
 
-gulp.task("dev", ["src", "browser-sync"], function() {
+gulp.task("watch", ["dev", "browser-sync"], function() {
 	gulp.watch("./src/**/*.*", ["src", browserSync.reload])
 });
-
