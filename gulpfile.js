@@ -39,13 +39,11 @@ gulp.task("js", function() {
 
 gulp.task("html", ["css", "js"], function() {
 	return gulp.src("./src/index.html")
-		.pipe(inline({
-			compress: false
-		}))
 		.pipe(minifyhtml({
 			quotes: true,
 			empty: true
 		}))
+		.pipe(inline())
 		.pipe(replace(/boxserver_url/i, baseUrl))
 		.pipe(gulp.dest(buildDir))
 });
@@ -83,12 +81,15 @@ gulp.task("dev", function() {
 		.pipe(prefix(prefixOptions))
 		.pipe(gulp.dest(buildDir));
 
-	var html = gulp.src("./src/styleguide.html")
+	var html = gulp.src("./src/*.html")
+		.pipe(inline({
+			compress: false
+		}))
 		.pipe(gulp.dest(buildDir));
 
 	return merge(js, css, html);
 });
 
 gulp.task("watch", ["dev", "browser-sync"], function() {
-	gulp.watch("./src/**/*.*", ["src", browserSync.reload])
+	gulp.watch("./src/**/*.*", ["dev", browserSync.reload])
 });
