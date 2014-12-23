@@ -14,6 +14,7 @@ var replace     = require('gulp-replace');
 var merge       = require("merge-stream");
 var del         = require("del");
 var runSequence = require('run-sequence');
+var plumber     = require('gulp-plumber');
 
 var prefixOptions = {
 	browsers: ['last 2 versions'],
@@ -73,15 +74,18 @@ gulp.task("default", ["html"]);
 
 gulp.task("dev", function() {
 	var js = gulp.src("./src/scripts.js")
+		.pipe(plumber())
 		.pipe(replace(/boxserver_url/i, baseUrl))
 		.pipe(gulp.dest(buildDir));
 
 	var css = gulp.src("./src/main.less")
+		.pipe(plumber())
 		.pipe(less())
 		.pipe(prefix(prefixOptions))
 		.pipe(gulp.dest(buildDir));
 
 	var html = gulp.src("./src/*.html")
+		.pipe(plumber())
 		.pipe(inline({
 			compress: false
 		}))
