@@ -22,12 +22,15 @@ var prefixOptions = {
 };
 var buildDir = "./build";
 var baseUrl  = process.env.BASEURL || "http://localhost:8001/";
-
+var inlineOptions = {
+	compress: false
+};
+console.log(inlineOptions)
 gulp.task("css", function() {
 	return gulp.src("./src/main.less")
 		.pipe(less())
 		.pipe(prefix(prefixOptions))
-		.pipe(uncss({html: "./src/styleguide.html"}))
+		.pipe(uncss({html: ["./src/styleguide.html"]}))
 		.pipe(compress())
 		.pipe(gulp.dest(buildDir))
 });
@@ -40,18 +43,17 @@ gulp.task("js", function() {
 
 gulp.task("html", ["css", "js"], function() {
 	return gulp.src("./src/index.html")
+		.pipe(inline(inlineOptions))
 		.pipe(minifyhtml({
 			quotes: true,
 			empty: true
 		}))
-		.pipe(inline())
 		.pipe(replace(/boxserver_url/i, baseUrl))
 		.pipe(gulp.dest(buildDir))
 });
 
 gulp.task("browser-sync", function() {
 	browserSync({
-		open: false,
 		server: {
 			baseDir: buildDir
 		}
@@ -86,9 +88,7 @@ gulp.task("dev", function() {
 
 	var html = gulp.src("./src/*.html")
 		.pipe(plumber())
-		.pipe(inline({
-			compress: false
-		}))
+		.pipe(inline(inlineOptions))
 		.pipe(gulp.dest(buildDir));
 
 	return merge(js, css, html);
