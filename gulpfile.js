@@ -49,7 +49,7 @@ gulp.task("html", ["css", "js"], function() {
 		.pipe(gulp.dest(buildDir))
 });
 
-gulp.task("browser-sync", ["html"], function() {
+gulp.task("browser-sync", function() {
 	browserSync({
 		open: false,
 		server: {
