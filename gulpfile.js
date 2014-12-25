@@ -78,17 +78,20 @@ gulp.task("dev", function() {
 	var js = gulp.src("./src/scripts.js")
 		.pipe(plumber())
 		.pipe(replace(/boxserver_url/i, baseUrl))
+		.pipe(plumber.stop())
 		.pipe(gulp.dest(buildDir));
 
 	var css = gulp.src("./src/main.less")
 		.pipe(plumber())
 		.pipe(less())
 		.pipe(prefix(prefixOptions))
+		.pipe(plumber.stop())
 		.pipe(gulp.dest(buildDir));
 
 	var html = gulp.src("./src/*.html")
 		.pipe(plumber())
 		.pipe(inline(inlineOptions))
+		.pipe(plumber.stop())
 		.pipe(gulp.dest(buildDir));
 
 	return merge(js, css, html);
