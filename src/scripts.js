@@ -14,6 +14,7 @@ var Global = {};
 	var
 		boxes = [],
 		baseUrl = "boxserver_url",
+		noop = function() {},
 
 		errorBox,
 		errorText,
@@ -22,7 +23,10 @@ var Global = {};
 		rxpVersion = /^[0-9]+\.[0-9]+\.[0-9]+$/,
 		rxpKey = /^[a-z0-9][a-z0-9_\-\.]+[a-z0-9]$/,
 		rxpId = /^([a-z0-9][a-z0-9_\-\.]+[a-z0-9])\/([a-z0-9][a-z0-9_\-\.]+[a-z0-9])$/,
-		rxpProvider = /^(virtualbox|vmware)$/,
+
+		confirmBox,
+		confirmText,
+		confirmCallback,
 
 		lastHash,
 		tooltip;
@@ -91,40 +95,36 @@ var Global = {};
 	function xhrGet(res, cb) {
 		var
 			xhr = new XMLHttpRequest(),
-			onload = function() {
-				var err = null, data = null;
+			onReadyStateChange = function() {
+				if (xhr.readyState == 4) {
+					var err = null, data = null;
 
-				try {
-					data = JSON.parse(xhr.responseText);
-				} catch (e) {
-					err = e;
+					try {
+						data = JSON.parse(xhr.responseText);
+
+						if (data && data.msg) {
+							data = data.msg;
+						}
+
+						if (xhr.status !== 200) {
+							err = data;
+							data = null;
+						}
+
+					} catch (e) {
+						err = e;
+					}
+
+					cb(err, data);
+					cleanup();
 				}
-
-				cb(err, data);
-				cleanup();
-			},
-			onerror = function() {
-				var err = new Error("Invalid request", xhr.status), data;
-				try {
-					data = JSON.parse(xhr.responseText);
-				} catch (err) {}
-
-				if (data && data.msg) {
-					err = new Error(data.msg);
-				}
-
-				cb(err, null);
-
-				cleanup();
 			},
 			cleanup = function() {
-				xhr.removeEventListener("load", onload);
-				xhr.removeEventListener("error", onerror);
+				xhr.removeEventListener("readystatechange", onReadyStateChange);
 				xhr = null;
 			};
 
-		xhr.addEventListener("load", onload);
-		xhr.addEventListener("error", onerror);
+		xhr.addEventListener("readystatechange", onReadyStateChange);
 		xhr.open("GET", baseUrl + res, true);
 		xhr.send(null);
 	}
@@ -135,13 +135,18 @@ var Global = {};
 		if (hash === lastHash) {
 			return;
 		}
-		console.log(hash, hash.substr(0, 4) == "_add");
 
 		if (hash == "") {
 			makeBoxesList()
 		} else if (rxpId.test(hash)) {
 			makeBoxesList(function() {
 				xhrGet(hash, function(err, data) {
+
+					if (err) {
+						showError(err);
+						return;
+					}
+
 					var
 						item = doc.querySelector("#Box_" + hash.replace(/\/+/, "_")),
 						version = doc.querySelector("#VersionItem").cloneNode(true),
@@ -194,16 +199,50 @@ var Global = {};
 					versionAdd.querySelector("a").href = "#_add/" + item.dataset.box + "/" + nextVersion;
 					container.appendChild(versionAdd);
 
+					win.scrollTo(item.offsetTop - 20, 0);
 				});
 			});
 		} else if (hash.length > 3 && hash.substr(0, 4) == "_add") {
 			showAddBox(hash.substr(4).replace(/^\/+/, ""));
+		} else if (hash.length > 6 && hash.substr(0, 7) == "_delete") {
+			deleteBox(hash.substr(7).replace(/^\/+/, ""), lastHash);
 		} else {
 			location.hash = lastHash;
 			return;
 		}
 
 		lastHash = hash;
+	}
+
+	function deleteBox(key, previousHash) {
+		showConfirm("Delete box with key " + key, function() {
+			var
+				xhr = new XMLHttpRequest(),
+				onreadystatechange = function() {
+					if (xhr.readyState == 4) {
+						if (xhr.status == 200) {
+							location.hash = previousHash;
+							return;
+						}
+
+						var err = xhr.statusText, data;
+
+						try {
+							data = JSON.parse(xhr.responseText);
+							if (data && data.msg) {
+								err = data.msg;
+							}
+						} catch (e) {}
+
+						showError(err);
+					}
+				};
+
+			xhr.addEventListener("readystatechange", onreadystatechange);
+
+			xhr.open('DELETE', baseUrl + key);
+			xhr.send(null);
+		});
 	}
 
 	function showAddBox(prefills) {
@@ -216,7 +255,7 @@ var Global = {};
 
 		doc.querySelector("#NewProject").value = (data.length && data[0] && rxpKey.test(data[0]) ? data[0] : '');
 		doc.querySelector("#NewBox").value = (data.length && data[1] && rxpKey.test(data[1]) ? data[1] : '');
-		doc.querySelector("#NewVersion").value = (data.length && data[2] && rxpVersion.test(data[2]) ? data[2] : '');
+		doc.querySelector("#NewVersion").value = (data.length && data[2] && rxpVersion.test(data[2]) ? data[2] : '1.0.0');
 
 		doc.querySelector("#NewSourceUpload").checked = true;
 
@@ -295,6 +334,45 @@ var Global = {};
 		}
 	}
 
+	function showConfirm(msg, callback) {
+		if (confirmBox.style.display = "none") {
+			closeConfirm(function() {
+				makeConfirm(msg, callback);
+			});
+		} else {
+			makeConfirm(msg, callback);
+		}
+	}
+
+	function makeConfirm(msg, callback) {
+		confirmBox.style.display = "block";
+		errorBackdrop.style.display = "block";
+		confirmText.textContent = msg;
+
+		setTimeout(function() {
+			confirmBox.classList.add("in");
+			errorBackdrop.classList.add("in");
+
+			confirmCallback = callback || noop;
+		});
+	}
+
+	function closeConfirm(callback) {
+		confirmBox.classList.remove("in");
+		errorBackdrop.classList.remove("in");
+		setTimeout(function() {
+			confirmBox.style.display = "none";
+			errorBackdrop.style.display = "none";
+
+			if (callback) {
+				callback();
+			}
+
+			confirmCallback = noop;
+
+		}, 300);
+	}
+
 	function showError(msg) {
 		if (errorBox.style.display == "block") {
 			closeError(function() {
@@ -328,6 +406,28 @@ var Global = {};
 	}
 
 	doc.addEventListener("DOMContentLoaded", function() {
+
+		var body = doc.querySelector("body").firstChild;
+
+		errorText = doc.querySelector("#ErrorText");
+		errorBox = doc.querySelector("#ErrorBox");
+		errorBackdrop = doc.querySelector("#ErrorBackdrop");
+
+		confirmBox = doc.querySelector("#ConfirmBox");
+		confirmText = doc.querySelector("#ConfirmText");
+
+		errorBox.classList.remove("in");
+		errorBackdrop.classList.remove("in");
+		confirmBox.classList.remove("in");
+
+		errorBox.style.display = "none";
+		errorBackdrop.style.display = "none";
+		confirmBox.style.display = "none";
+
+		body.parentNode.insertBefore(errorBackdrop, body);
+		body.parentNode.insertBefore(errorBox, body);
+		body.parentNode.insertBefore(confirmBox, body);
+
 		setDocumentByHash();
 	});
 
@@ -347,13 +447,21 @@ var Global = {};
 				data,
 				xhr,
 				onProgress = function(e) {
-					doc.querySelector("#Percent").textContent = (Math.ceil(e.loaded/e.total) * 100).toString();
+					if (e.loaded && e.total) {
+						var total = (Math.ceil(e.loaded / e.total) * 100).toString();
+						if (total == "100") {
+							total = "Upload done<br>waiting for response";
+						} else {
+							total += "%";
+						}
+						doc.querySelector("#Percent").innerHTML = total;
+					}
 				},
 				onReadyStateChange = function() {
 					if (xhr.readyState == 4) {
 
 						if (xhr.status == 200) {
-							location.hash = "";
+							location.hash = box;
 						} else {
 							showError("Error during from");
 						}
@@ -366,10 +474,13 @@ var Global = {};
 
 			if (!rxpId.test(box)) {
 				createTooltip(form.querySelector("#NewProject"), "Not a valid box name");
+				return;
 			} else if (!rxpVersion.test(version)) {
 				createTooltip(form.querySelector("#NewVersion"), "Not a valid version");
+				return;
 			} else if (source == "upload" && file.files.length !== 1) {
 				createTooltip(form.querySelector("#NewUploadFile"), "Select one box file");
+				return;
 			}
 
 			data = new FormData();
@@ -379,13 +490,19 @@ var Global = {};
 				data.append('box', file.files[0]);
 				resource += "/" + provider
 			} else {
-				data.append("from", form.querySelector("#NewSourceCopyFrom").value)
+				data.append("source", form.querySelector("#NewSourceCopyFrom").value);
 			}
 
 			xhr.upload.addEventListener('progress', onProgress);
 			xhr.addEventListener('readystatechange', onReadyStateChange);
 
-			xhr.open('PUT', baseUrl + resource);
+			doc.querySelector("#Percent").textContent = "0";
+
+			doc.querySelector("#List").style.display = "none";
+			doc.querySelector("#Upload").style.display = "block";
+			doc.querySelector("#AddBox").style.display = "none";
+
+			xhr.open('POST', baseUrl + resource);
 			xhr.send(data);
 		});
 	};
@@ -393,9 +510,16 @@ var Global = {};
 	exp.ShowModal = showError;
 	exp.CloseModal = closeError;
 
-	exp.CloseConfirm = function() {}
-	exp.ConfirmYes = function() {}
-	exp.ConfirmNo = function() {}
+	exp.ConfirmNo = exp.CloseConfirm = function() {
+		closeConfirm();
+	};
+
+	exp.ConfirmYes = function() {
+		if (confirmCallback) {
+			confirmCallback();
+		}
+		closeConfirm();
+	};
 
 	exp.SetAddMode = setSourceMode;
 })(window, document, Global);
