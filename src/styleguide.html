@@ -9,22 +9,162 @@
 </head>
 <body>
 <div class="container">
+	<div id="Template_Tooltip" class="tooltip top in" role="tooltip" hidden><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>
+	<div class="modal-backdrop fade in" id="ErrorBackdrop" hidden></div>
+	<div class="modal fade in" id="ErrorBox" hidden>
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="Global.CloseModal();"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Error</h4>
+				</div>
+				<div class="modal-body">
+					<p id="ErrorText">This is an error text</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade in" id="ConfirmBox" hidden>
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="Global.CloseConfirm();Global.ConfirmNo();"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Confirm</h4>
+				</div>
+				<div class="modal-body">
+					<p id="ConfirmText">This is an error text</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" onclick="Global.CloseConfirm();Global.ConfirmNo();">No</button>
+					<button type="button" class="btn btn-primary" onclick="Global.CloseConfirm();Global.ConfirmYes();">Yes</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="page-header">
+		<a href="#_box" class="btn btn-default pull-right">Add Box</a>
+		<h1>Boxes</h1>
+	</div>
+	<div class="row" id="AddBox">
+		<div class="col-xs-12">
+			<form class="form-horizontal" onsubmit="Global.AddBox(this); return false;">
+				<div class="form-group">
+					<label for="NewProject" class="col-sm-2 control-label">Name</label>
+					<div class="col-sm-4">
+						<div class="input-group">
+							<input type="text" class="form-control" id="NewProject" placeholder="project">
+							<span class="input-group-addon">/</span>
+							<input type="text" class="form-control" id="NewBox" placeholder="type">
+						</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="NewVersion" class="col-sm-2 control-label">Version</label>
+					<div class="col-sm-2">
+						<input type="text" class="form-control" id="NewVersion" value="1.0.0" required>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">Source</label>
+					<div class="col-sm-4">
+						<div class="radio">
+							<label>
+								<input type="radio" name="source" id="NewSourceUpload" checked>
+								Upload .box file
+							</label>
+						</div>
+						<div class="radio">
+							<label>
+								<input type="radio" name="source" id="NewSourceCopy">
+								Copy extisting box
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="NewSourceUploadContainer">
+					<div class="form-group">
+						<label for="NewUploadFile" class="col-sm-2 control-label">File</label>
+						<div class="col-sm-4">
+							<input type="file" id="NewUploadFile" class="form-control">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="NewProvider" class="col-sm-2 control-label">Provider</label>
+						<div class="col-sm-4">
+							<select size="1" class="form-control" id="NewProvider">
+								<option value="virtualbox">Virtualbox</option>
+								<option value="vmware">Vmware</option>
+							</select>
+						</div>
+					</div>
+				</div>
+				<div class="form-group" id="NewSourceCopyContainer">
+					<label for="NewVersion" class="col-sm-2 control-label">From</label>
+					<div class="col-sm-4">
+						<select size="1" class="form-control" id="NewSourceCopyFrom">
+							<option value="base/typo3/1.0.0">base/typo3 1.0.0</option>
+							<option value="base/typo3/1.0.1">base/typo3 1.0.1</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-10">
+						<button type="submit" class="btn btn-default">Create</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class="row" id="Upload">
+		<div class="col-xs-12">
+			<div class="panel panel-primary">
+				<div class="panel-heading">Saving ...</div>
+				<div class="panel-body">
+					<div class="load-container">
+						<div class="loader"></div>
+						<div class="progress-meter"><span id="Percent">12</span>%</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="row">
-		<div class="col-xs-12"><h1>Boxes</h1></div>
-		<ul id="BoxesList" class="list-group">
-			<li class="list-group-item">
-				<h3 class="name">base/typo3</h3>
-			</li>
-			<li class="list-group-item">
-				<h3 class="name">cyberhouse/typo3</h3>
-			</li>
-			<li class="list-group-item">
-				<h3 class="name">kuk/magento</h3>
-			</li>
-			<li class="list-group-item">
-				<h3 class="name">lkuf/mylkuf</h3>
-			</li>
-		</ul>
+		<div class="col-xs-12">
+			<div class="list-group" id="BoxList">
+				<a href="#base/typo3" class="list-group-item active">base/typo3</a>
+				<ul class="list-group">
+					<li class="list-group-item">
+						<div class="row">
+							<div class="col-xs-12 col-md-6 col-lg-3">
+								<h4 class="list-group-item-heading box-version">
+									<a type="button" class="btn btn-xs btn-danger pull-right" href="#_delete/base/typo3/1.0.1">&times</a>
+									1.0.1</h4>
+								<table class="table">
+									<tr>
+										<td>virtualbox</td>
+										<td><a type="button" class="btn btn-xs btn-danger" href="#_delete/base/typo3/1.0.1/virtualbox">&times</a></td>
+									</tr>
+									<tr>
+										<td>vmware</td>
+										<td><a type="button" class="btn btn-xs btn-danger" href="#_delete/base/typo3/1.0.1/vmware">&times</a></td>
+									</tr>
+									<tr>
+										<td colspan="2"><a href="#_add/base/typo3/1.0.1" class="btn btn-default btn-xs">Add Provider</a></td>
+									</tr>
+								</table>
+							</div>
+						</div>
+					</li>
+					<li class="list-group-item">
+						<a href="#_add/base/typo3" class="btn btn-default btn-sm">Add Version</a>
+					</li>
+				</ul>
+				<a href="#base/magento" class="list-group-item">base/magento</a>
+				<a href="#project/typo3" class="list-group-item">project/typo3</a>
+				<a href="#project/solr" class="list-group-item">project/solr</a>
+				<a href="#intra/holidays" class="list-group-item">intra/holidays</a>
+			</div>
+		</div>
 	</div>
 </div>
 </body>
