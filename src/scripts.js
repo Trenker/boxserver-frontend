@@ -29,7 +29,18 @@ var Global = {};
 		confirmCallback,
 
 		lastHash,
-		tooltip;
+		tooltip,
+
+		selector_List = "#List",
+		selector_Upload = "#Upload",
+		selector_Add = "#AddBox",
+
+		style_Hide = "none",
+		style_Show = "block";
+
+	function getElement(selector) {
+		return doc.querySelector(selector);
+	}
 
 	function emptyElement(element) {
 		element.innerHTML = '';
@@ -38,9 +49,9 @@ var Global = {};
 
 	function makeBoxesList(callback) {
 
-		doc.querySelector("#List").style.display = "block";
-		doc.querySelector("#Upload").style.display = "none";
-		doc.querySelector("#AddBox").style.display = "none";
+		getElement(selector_List).style.display = style_Show;
+		getElement(selector_Upload).style.display = style_Hide;
+		getElement(selector_Add).style.display = style_Hide;
 
 		boxes = [];
 
@@ -67,8 +78,8 @@ var Global = {};
 					if (done == needed) {
 
 						var
-							template = doc.querySelector('#BoxListItem'),
-							container = doc.querySelector("#BoxList");
+							template = getElement('#BoxListItem'),
+							container = getElement("#BoxList");
 
 						emptyElement(container);
 						boxes.sort().forEach(function(box) {
@@ -148,11 +159,11 @@ var Global = {};
 					}
 
 					var
-						item = doc.querySelector("#Box_" + hash.replace(/\/+/, "_")),
-						version = doc.querySelector("#VersionItem").cloneNode(true),
+						item = getElement("#Box_" + hash.replace(/\/+/, "_")),
+						version = getElement("#VersionItem").cloneNode(true),
 						provider = version.querySelector(".provider-template").cloneNode(true),
-						container = doc.querySelector("#ListVersions").cloneNode(true),
-						versionAdd = doc.querySelector("#NewVersionItem").cloneNode(true),
+						container = getElement("#ListVersions").cloneNode(true),
+						versionAdd = getElement("#NewVersionItem").cloneNode(true),
 						providerSuper = version.querySelector(".provider-template"),
 						nextVersion,
 						availableVersions = [];
@@ -247,28 +258,33 @@ var Global = {};
 
 	function showAddBox(prefills) {
 
-		doc.querySelector("#List").style.display = "none";
-		doc.querySelector("#Upload").style.display = "none";
-		doc.querySelector("#AddBox").style.display = "block";
+		getElement(selector_List).style.display = style_Hide;
+		getElement(selector_Upload).style.display = style_Hide;
+		getElement(selector_Add).style.display = style_Show;
 
 		var data = prefills.split("/");
 
-		doc.querySelector("#NewProject").value = (data.length && data[0] && rxpKey.test(data[0]) ? data[0] : '');
-		doc.querySelector("#NewBox").value = (data.length && data[1] && rxpKey.test(data[1]) ? data[1] : '');
-		doc.querySelector("#NewVersion").value = (data.length && data[2] && rxpVersion.test(data[2]) ? data[2] : '1.0.0');
+		getElement("#NewProject").value = (data.length > 0 && rxpKey.test(data[0]) ? data[0] : '');
+		getElement("#NewBox").value = (data.length > 1 && rxpKey.test(data[1]) ? data[1] : '');
+		getElement("#NewVersion").value = (data.length > 2 && rxpVersion.test(data[2]) ? data[2] : '1.0.0');
 
-		doc.querySelector("#NewSourceUpload").checked = true;
+		getElement("#NewSourceUpload").checked = true;
 
 		setSourceMode();
 	}
 
 	function setSourceMode() {
-		if (doc.querySelector("#NewSourceUpload").checked) {
-			doc.querySelector("#NewSourceUploadContainer").style.display = "block";
-			doc.querySelector("#NewSourceCopyContainer").style.display = "none";
+
+		var
+			upload = getElement("#NewSourceUploadContainer").style,
+			copy   = getElement("#NewSourceCopyContainer").style;
+
+		if (getElement("#NewSourceUpload").checked) {
+			upload.display = style_Show;
+			copy.display = style_Hide;
 		} else {
-			doc.querySelector("#NewSourceUploadContainer").style.display = "none";
-			doc.querySelector("#NewSourceCopyContainer").style.display = "block";
+			upload.display = style_Hide;
+			copy.display = style_Show;
 		}
 	}
 
@@ -309,7 +325,7 @@ var Global = {};
 	}
 
 	function showTooltip(element, content) {
-		tooltip = doc.querySelector("#Template_Tooltip").cloneNode(true);
+		tooltip = getElement("#Template_Tooltip").cloneNode(true);
 		element.parentNode.insertBefore(tooltip, element);
 		tooltip.querySelector(".tooltip-inner").textContent = content;
 		tooltip.style.left = (element.offsetLeft + (element.clientWidth / 2) - (tooltip.clientWidth / 2)) + "px";
@@ -324,7 +340,7 @@ var Global = {};
 				tooltip.parentNode.removeChild(tooltip);
 				tooltip = null;
 				if (callback) {
-					callback();
+					setTimeout(callback, 300);
 				}
 			}, 300);
 		} else {
@@ -335,7 +351,7 @@ var Global = {};
 	}
 
 	function showConfirm(msg, callback) {
-		if (confirmBox.style.display = "none") {
+		if (confirmBox.style.display = style_Hide) {
 			closeConfirm(function() {
 				makeConfirm(msg, callback);
 			});
@@ -345,8 +361,8 @@ var Global = {};
 	}
 
 	function makeConfirm(msg, callback) {
-		confirmBox.style.display = "block";
-		errorBackdrop.style.display = "block";
+		confirmBox.style.display = style_Show;
+		errorBackdrop.style.display = style_Show;
 		confirmText.textContent = msg;
 
 		setTimeout(function() {
@@ -361,8 +377,8 @@ var Global = {};
 		confirmBox.classList.remove("in");
 		errorBackdrop.classList.remove("in");
 		setTimeout(function() {
-			confirmBox.style.display = "none";
-			errorBackdrop.style.display = "none";
+			confirmBox.style.display = style_Hide;
+			errorBackdrop.style.display = style_Hide;
 
 			if (callback) {
 				callback();
@@ -374,7 +390,7 @@ var Global = {};
 	}
 
 	function showError(msg) {
-		if (errorBox.style.display == "block") {
+		if (errorBox.style.display == style_Show) {
 			closeError(function() {
 				displayError(msg);
 			})
@@ -385,8 +401,8 @@ var Global = {};
 
 	function displayError(msg) {
 		errorText.innerHTML = msg;
-		errorBox.style.display = "block";
-		errorBackdrop.style.display = "block";
+		errorBox.style.display = style_Show;
+		errorBackdrop.style.display = style_Show;
 		setTimeout(function() {
 			errorBox.classList.add("in");
 			errorBackdrop.classList.add("in");
@@ -397,8 +413,8 @@ var Global = {};
 		errorBox.classList.remove("in");
 		errorBackdrop.classList.remove("in");
 		setTimeout(function() {
-			errorBox.style.display = "none";
-			errorBackdrop.style.display = "none";
+			errorBox.style.display = style_Hide;
+			errorBackdrop.style.display = style_Hide;
 			if (callback) {
 				callback()
 			}
@@ -407,22 +423,22 @@ var Global = {};
 
 	doc.addEventListener("DOMContentLoaded", function() {
 
-		var body = doc.querySelector("body").firstChild;
+		var body = getElement("body").firstChild;
 
-		errorText = doc.querySelector("#ErrorText");
-		errorBox = doc.querySelector("#ErrorBox");
-		errorBackdrop = doc.querySelector("#ErrorBackdrop");
+		errorText = getElement("#ErrorText");
+		errorBox = getElement("#ErrorBox");
+		errorBackdrop = getElement("#ErrorBackdrop");
 
-		confirmBox = doc.querySelector("#ConfirmBox");
-		confirmText = doc.querySelector("#ConfirmText");
+		confirmBox = getElement("#ConfirmBox");
+		confirmText = getElement("#ConfirmText");
 
 		errorBox.classList.remove("in");
 		errorBackdrop.classList.remove("in");
 		confirmBox.classList.remove("in");
 
-		errorBox.style.display = "none";
-		errorBackdrop.style.display = "none";
-		confirmBox.style.display = "none";
+		errorBox.style.display = style_Hide;
+		errorBackdrop.style.display = style_Hide;
+		confirmBox.style.display = style_Hide;
 
 		body.parentNode.insertBefore(errorBackdrop, body);
 		body.parentNode.insertBefore(errorBox, body);
@@ -454,7 +470,7 @@ var Global = {};
 						} else {
 							total += "%";
 						}
-						doc.querySelector("#Percent").innerHTML = total;
+						getElement("#Percent").innerHTML = total;
 					}
 				},
 				onReadyStateChange = function() {
@@ -484,7 +500,7 @@ var Global = {};
 			}
 
 			data = new FormData();
-			xhr = new XMLHttpRequest();
+			xhr  = new XMLHttpRequest();
 
 			if (source == "upload") {
 				data.append('box', file.files[0]);
@@ -496,11 +512,11 @@ var Global = {};
 			xhr.upload.addEventListener('progress', onProgress);
 			xhr.addEventListener('readystatechange', onReadyStateChange);
 
-			doc.querySelector("#Percent").textContent = "0";
+			getElement("#Percent").textContent = "0";
 
-			doc.querySelector("#List").style.display = "none";
-			doc.querySelector("#Upload").style.display = "block";
-			doc.querySelector("#AddBox").style.display = "none";
+			getElement(selector_List).style.display = style_Hide;
+			getElement(selector_Upload).style.display = style_Show;
+			getElement(selector_Add).style.display = style_Hide;
 
 			xhr.open('POST', baseUrl + resource);
 			xhr.send(data);
