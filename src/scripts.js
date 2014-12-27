@@ -8,7 +8,6 @@
 
 var Global = {};
 
-
 (function(win, doc, exp) {
 
 	var
@@ -43,7 +42,9 @@ var Global = {};
 	}
 
 	function emptyElement(element) {
-		element.innerHTML = '';
+		while (element.firstChild) {
+			element.removeChild(element.firstChild);
+		}
 		return element;
 	}
 
@@ -58,13 +59,15 @@ var Global = {};
 		xhrGet("", function(err, projects) {
 
 			if (err) {
-				showError(err.msg ? err : err + "");
+				showError(err.msg ? err.msg : err + "");
 				return;
 			}
 
 			var
 				done = 0,
 				needed = projects.length;
+
+			boxes = [];
 
 			projects.forEach(function(project) {
 				xhrGet(project, function(err, boxnames) {
@@ -262,7 +265,9 @@ var Global = {};
 		getElement(selector_Upload).style.display = style_Hide;
 		getElement(selector_Add).style.display = style_Show;
 
-		var data = prefills.split("/");
+		var
+			data = prefills.split("/"),
+			copyOptions = getElement("#NewSourceCopyFrom");
 
 		getElement("#NewProject").value = (data.length > 0 && rxpKey.test(data[0]) ? data[0] : '');
 		getElement("#NewBox").value = (data.length > 1 && rxpKey.test(data[1]) ? data[1] : '');
@@ -271,6 +276,39 @@ var Global = {};
 		getElement("#NewSourceUpload").checked = true;
 
 		setSourceMode();
+
+		emptyElement(copyOptions);
+
+		boxes = [];
+
+		xhrGet("", function(err, projects) {
+			projects.forEach(function(project) {
+				xhrGet(project, function(err, projectBoxes) {
+					projectBoxes.forEach(function(box) {
+
+						var key = project + "/" + box;
+
+						boxes.push(key);
+
+						xhrGet(key, function(err, data) {
+							if (err) {
+								showError(err)
+								return;
+							}
+
+							data.versions.map(function(v) {
+								return v.version;
+							}).sort().reverse().forEach(function(v) {
+								var el = doc.createElement("option");
+								el.value = key + "/" + v;
+								el.text = key + " " + v;
+								copyOptions.appendChild(el);
+							});
+						});
+					});
+				});
+			});
+		});
 	}
 
 	function setSourceMode() {
