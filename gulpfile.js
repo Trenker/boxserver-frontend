@@ -25,7 +25,7 @@ var baseUrl  = process.env.BASEURL || "http://localhost:8001/";
 var inlineOptions = {
 	compress: false
 };
-console.log(inlineOptions)
+
 gulp.task("css", function() {
 	return gulp.src("./src/main.less")
 		.pipe(less())
