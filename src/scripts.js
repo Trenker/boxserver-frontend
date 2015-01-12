@@ -219,7 +219,7 @@ var Global = {};
 		} else if (hash.length > 3 && hash.substr(0, 4) == "_add") {
 			showAddBox(hash.substr(4).replace(/^\/+/, ""));
 		} else if (hash.length > 6 && hash.substr(0, 7) == "_delete") {
-			deleteBox(hash.substr(7).replace(/^\/+/, ""), lastHash);
+			deleteBox(hash.substr(7).replace(/^\/+/, ""));
 		} else {
 			location.hash = lastHash;
 			return;
@@ -228,14 +228,14 @@ var Global = {};
 		lastHash = hash;
 	}
 
-	function deleteBox(key, previousHash) {
+	function deleteBox(key) {
 		showConfirm("Delete box with key " + key, function() {
 			var
 				xhr = new XMLHttpRequest(),
 				onreadystatechange = function() {
 					if (xhr.readyState == 4) {
 						if (xhr.status == 200) {
-							location.hash = previousHash;
+							location.hash = "";
 							return;
 						}
 
@@ -249,7 +249,12 @@ var Global = {};
 						} catch (e) {}
 
 						showError(err);
+						cleanup();
 					}
+				},
+				cleanup = function() {
+					xhr.removeEventListener("readystatechange", onreadystatechange);
+					xhr = null;
 				};
 
 			xhr.addEventListener("readystatechange", onreadystatechange);
@@ -501,15 +506,16 @@ var Global = {};
 				data,
 				xhr,
 				onProgress = function(e) {
-					if (e.loaded && e.total) {
-						var total = (Math.ceil(e.loaded / e.total) * 100).toString();
-						if (total == "100") {
-							total = "Upload done<br>waiting for response";
-						} else {
-							total += "%";
-						}
-						getElement("#Percent").innerHTML = total;
+
+					var total = Math.ceil(e.loaded / e.total * 100).toString();
+
+					if (total == "100") {
+						total = "Upload done<br>waiting for response";
+					} else {
+						total += "%";
 					}
+
+					getElement("#Percent").innerHTML = total;
 				},
 				onReadyStateChange = function() {
 					if (xhr.readyState == 4) {
@@ -528,36 +534,34 @@ var Global = {};
 
 			if (!rxpId.test(box)) {
 				createTooltip(form.querySelector("#NewProject"), "Not a valid box name");
-				return;
 			} else if (!rxpVersion.test(version)) {
 				createTooltip(form.querySelector("#NewVersion"), "Not a valid version");
-				return;
 			} else if (source == "upload" && file.files.length !== 1) {
 				createTooltip(form.querySelector("#NewUploadFile"), "Select one box file");
-				return;
-			}
-
-			data = new FormData();
-			xhr  = new XMLHttpRequest();
-
-			if (source == "upload") {
-				data.append('box', file.files[0]);
-				resource += "/" + provider
 			} else {
-				data.append("source", form.querySelector("#NewSourceCopyFrom").value);
+
+				data = new FormData();
+				xhr  = new XMLHttpRequest();
+
+				if (source == "upload") {
+					data.append('box', file.files[0]);
+					resource += "/" + provider
+				} else {
+					data.append("source", form.querySelector("#NewSourceCopyFrom").value);
+				}
+
+				xhr.upload.addEventListener('progress', onProgress);
+				xhr.addEventListener('readystatechange', onReadyStateChange);
+
+				getElement("#Percent").textContent = "0";
+
+				getElement(selector_List).style.display = style_Hide;
+				getElement(selector_Upload).style.display = style_Show;
+				getElement(selector_Add).style.display = style_Hide;
+
+				xhr.open('POST', baseUrl + resource, true);
+				xhr.send(data);
 			}
-
-			xhr.upload.addEventListener('progress', onProgress);
-			xhr.addEventListener('readystatechange', onReadyStateChange);
-
-			getElement("#Percent").textContent = "0";
-
-			getElement(selector_List).style.display = style_Hide;
-			getElement(selector_Upload).style.display = style_Show;
-			getElement(selector_Add).style.display = style_Hide;
-
-			xhr.open('POST', baseUrl + resource);
-			xhr.send(data);
 		});
 	};
 
