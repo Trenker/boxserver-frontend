@@ -148,3 +148,22 @@
 	padding-right:  8px;
 	padding-bottom: 6px;
 }
+
+.list-group {
+	margin-bottom: 0;
+}
+
+.item-container {
+
+	> a.list-group-item {
+		border-bottom: 0;
+	}
+
+	&:last-child > a.list-group-item {
+		border-bottom: 1px solid @list-group-border;
+	}
+}
+
+.list-group .list-group .list-group-item:last-child {
+	border-bottom: 0;
+}
