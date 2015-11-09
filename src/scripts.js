@@ -201,6 +201,10 @@ var Global = {};
 							providerItem.querySelector(".provider-name").textContent = p.name;
 							providerItem.querySelector(".provider-download").href = p.url;
 
+							if (p.size) {
+								providerItem.querySelector(".box-size").textContent = "(" + p.size + ")"
+							}
+
 							after.parentNode.insertBefore(providerItem, after);
 						});
 
