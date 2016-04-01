@@ -217,7 +217,7 @@ var Global = {};
 					versionAdd.querySelector("a").href = "#_add/" + item.dataset.box + "/" + nextVersion;
 					container.appendChild(versionAdd);
 
-					win.scrollTo(item.offsetTop - 20, 0);
+					win.scrollTo(0, getTop(item) - 20);
 				});
 			});
 		} else if (hash.length > 3 && hash.substr(0, 4) == "_add") {
@@ -230,6 +230,14 @@ var Global = {};
 		}
 
 		lastHash = hash;
+	}
+
+	function getTop(el) {
+		for (var top = 0; el;) {
+			top += el.offsetTop;
+			el = el.offsetParent;
+		}
+		return top;
 	}
 
 	function deleteBox(key) {
